@@ -161,5 +161,15 @@ public class AccountServiceImpl implements AccountService {
         return modelMapper.map(checkBalance, AccountDto.class);
     }
 
+    @Override
+    public void deleteAccount(Long id) {
+
+        Account account = accountRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Account", "id", id)
+        );
+
+        accountRepository.delete(account);
+    }
+
 
 }

@@ -19,4 +19,6 @@ public interface AccountService {
     public AccountDto withdrawFromAccount(Long id, Double amount);
 
     public AccountDto checkBalance(Long id);
+
+    void deleteAccount(Long id);
 }
