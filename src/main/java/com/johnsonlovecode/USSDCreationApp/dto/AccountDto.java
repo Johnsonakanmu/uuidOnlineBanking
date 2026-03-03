@@ -31,10 +31,10 @@ public class AccountDto {
     private String pin;
     private String address;
     private String city;
-    private String  accountType;
-    private String  country;
+    private String accountType;
+    private String country;
     private Date dateOfBirth;
-    private String  gender;
+    private String gender;
     private Double balance;
 
     private List<TransactionDto> transactions;

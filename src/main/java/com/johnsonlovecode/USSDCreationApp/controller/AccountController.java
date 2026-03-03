@@ -175,7 +175,7 @@ public class AccountController {
     // for Swagger implementation For Delete
     @Operation(
             summary = "Delete account Rest API",
-            description = "Delete account Rest API is used to Delete a particular account in the database"
+            description = "Delete account Rest API is used to Delete a particular account  in the database"
     )
     @ApiResponse(
             responseCode = "200",
