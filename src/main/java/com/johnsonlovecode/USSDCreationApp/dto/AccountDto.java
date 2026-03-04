@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -26,16 +27,16 @@ public class AccountDto {
     private String email;
     @NotBlank(message = "User phone number should not be null or empty")
     private String phoneNumber;
-    private String password;
+//    private String password;
     private String accountNumber;
-    private String pin;
+//    private String pin;
     private String address;
     private String city;
     private String accountType;
     private String country;
     private Date dateOfBirth;
     private String gender;
-    private Double balance;
+    private BigDecimal balance;
 
-    private List<TransactionDto> transactions;
+    private List<DepositRequestDto> transactions;
 }

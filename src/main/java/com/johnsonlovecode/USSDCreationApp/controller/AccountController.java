@@ -1,8 +1,6 @@
 package com.johnsonlovecode.USSDCreationApp.controller;
 
-import com.johnsonlovecode.USSDCreationApp.dto.AccountDto;
-import com.johnsonlovecode.USSDCreationApp.dto.TransactionDto;
-import com.johnsonlovecode.USSDCreationApp.entity.Account;
+import com.johnsonlovecode.USSDCreationApp.dto.*;
 import com.johnsonlovecode.USSDCreationApp.service.AccountService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -13,9 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 // for Swagger implementation
 @Tag(
@@ -43,9 +39,9 @@ public class AccountController {
     //
 
     @PostMapping
-    public ResponseEntity<AccountDto> createAccount(@Valid @RequestBody AccountDto accountDto){
+    public ResponseEntity<AccountResponseDto> createAccount(@Valid @RequestBody AccountRequestDto accountRequestDto){
 
-        AccountDto savedAccount =  accountService.createAccount(accountDto);
+        AccountResponseDto savedAccount =  accountService.createAccount(accountRequestDto);
 
         return new ResponseEntity<>(savedAccount, HttpStatus.CREATED);
     }
@@ -62,12 +58,14 @@ public class AccountController {
     )
     //
 
+
     @GetMapping("/{id}")
-    public ResponseEntity<AccountDto> getAccountById(@PathVariable("id") Long accountId){
+    public ResponseEntity<AccountResponseDto> getAccountById(
+            @PathVariable Long id) {
 
-        AccountDto account = accountService.getAccountById(accountId);
+        AccountResponseDto account = accountService.getAccountById(id);
 
-        return new ResponseEntity<>(account, HttpStatus.OK);
+        return ResponseEntity.ok(account);
     }
 
     // for Swagger implementation For GET all User
@@ -82,12 +80,11 @@ public class AccountController {
     //
 
     @GetMapping
-    public ResponseEntity<List<AccountDto>> getAllAccounts(){
+    public ResponseEntity<List<AccountResponseDto>> getAllAccounts() {
 
-       List<AccountDto> accountDto =  accountService.getAllAccounts();
+        List<AccountResponseDto> accounts = accountService.getAllAccounts();
 
-       return ResponseEntity.ok(accountDto);
-
+        return ResponseEntity.ok(accounts);
     }
 
     // for Swagger implementation For UPDATE
@@ -101,13 +98,14 @@ public class AccountController {
     )
     //
 
-    @PatchMapping("/{id}/update")
-    public ResponseEntity<AccountDto> updateAccount(@PathVariable("id") Long accountId, @RequestBody AccountDto accountDto){
+    @PatchMapping("/{id}")
+    public ResponseEntity<AccountResponseDto> updateAccount(
+            @PathVariable Long id,
+            @RequestBody AccountUpdateRequestDto dto) {
 
-        AccountDto updateAccountDto = accountService.updateAccount(accountId, accountDto);
+        AccountResponseDto updatedAccount = accountService.updateAccount(id, dto);
 
-        return new ResponseEntity<>(updateAccountDto, HttpStatus.OK);
-
+        return ResponseEntity.ok(updatedAccount);
     }
 
     // for Swagger implementation For POST
@@ -121,9 +119,10 @@ public class AccountController {
     )
     //
     @PostMapping("/{id}/deposit")
-    public ResponseEntity<AccountDto> depositInToAccount(@PathVariable("id") Long accountId, @RequestBody TransactionDto request){
+    public ResponseEntity<AccountResponseDto> depositInToAccount(@PathVariable("id") Long accountId,
+                                                                 @RequestBody DepositRequestDto request){
 
-        AccountDto accountDto = accountService.depositInToAccount(accountId, request.getAmount());
+        AccountResponseDto accountDto = accountService.depositInToAccount(accountId, request.getAmount());
         return  new ResponseEntity<>(accountDto, HttpStatus.CREATED);
 
     }
@@ -140,11 +139,11 @@ public class AccountController {
     )
     //
     @PostMapping("/{id}/withdrawal")
-    public ResponseEntity<AccountDto>  withdrawFromAccount(@PathVariable("id") Long accountId, @RequestBody TransactionDto request){
+    public ResponseEntity<AccountResponseDto>  withdrawFromAccount(@PathVariable("id") Long accountId, @RequestBody DepositRequestDto request){
 
-        AccountDto accountDto = accountService.withdrawFromAccount(accountId, request.getAmount());
+        AccountResponseDto response = accountService.withdrawFromAccount(accountId, request.getAmount());
 
-        return new ResponseEntity<>(accountDto, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.OK);
 
     }
 
@@ -159,17 +158,11 @@ public class AccountController {
     )
     //
     @GetMapping("/{id}/balance")
-    public ResponseEntity<Map<String, Object>> checkBalance(@PathVariable("id") Long accountId){
+    public ResponseEntity<BalanceResponseDto> checkBalance(@PathVariable("id") Long accountId){
 
-        AccountDto account = accountService.checkBalance(accountId);
+        BalanceResponseDto account = accountService.checkBalance(accountId);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("accountNumber", account.getAccountNumber());
-        response.put("accountName", account.getFirstName() + " " + account.getLastName());
-        response.put("balance", account.getBalance());
-
-        return  new ResponseEntity<>(response, HttpStatus.OK);
-
+        return  new ResponseEntity<>(account, HttpStatus.OK);
     }
 
     // for Swagger implementation For Delete

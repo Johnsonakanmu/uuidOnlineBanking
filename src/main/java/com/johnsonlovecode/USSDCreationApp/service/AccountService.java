@@ -1,24 +1,25 @@
 package com.johnsonlovecode.USSDCreationApp.service;
 
-import com.johnsonlovecode.USSDCreationApp.dto.AccountDto;
+import com.johnsonlovecode.USSDCreationApp.dto.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface AccountService {
 
-    public AccountDto createAccount(AccountDto accountDto);
+    public AccountResponseDto createAccount(AccountRequestDto dto);
 
-    public AccountDto getAccountById(Long id);
+    public AccountResponseDto getAccountById(Long id);
 
-    public List<AccountDto> getAllAccounts();
+    public List<AccountResponseDto> getAllAccounts();
 
-    public AccountDto updateAccount(Long id, AccountDto accountDto);
+    public AccountResponseDto updateAccount(Long id, AccountUpdateRequestDto updateRequestDto);
 
-    public AccountDto depositInToAccount(Long id, Double amount);
+    public AccountResponseDto depositInToAccount(Long id, BigDecimal amount);
 
-    public AccountDto withdrawFromAccount(Long id, Double amount);
+    public AccountResponseDto withdrawFromAccount(Long id, BigDecimal amount);
 
-    public AccountDto checkBalance(Long id);
+    public BalanceResponseDto checkBalance(Long id);
 
     void deleteAccount(Long id);
 }

@@ -5,16 +5,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import java.math.BigDecimal;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class TransactionDto {
+public class BalanceResponseDto {
 
-    private Double amount;
-    private String type;
-    private LocalDateTime transactionDate;
+    private String accountNumber;
+    private String accountName;
+    private BigDecimal balance;
 }

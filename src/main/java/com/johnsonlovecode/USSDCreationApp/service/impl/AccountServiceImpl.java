@@ -1,17 +1,19 @@
 package com.johnsonlovecode.USSDCreationApp.service.impl;
 
-import com.johnsonlovecode.USSDCreationApp.dto.AccountDto;
+import com.johnsonlovecode.USSDCreationApp.dto.*;
 import com.johnsonlovecode.USSDCreationApp.entity.Account;
 import com.johnsonlovecode.USSDCreationApp.entity.Transaction;
 import com.johnsonlovecode.USSDCreationApp.exception.ResourceNotFoundException;
 import com.johnsonlovecode.USSDCreationApp.repository.AccountRepository;
 import com.johnsonlovecode.USSDCreationApp.service.AccountService;
-import com.johnsonlovecode.USSDCreationApp.utils.AccountNumberGenerator;
+import com.johnsonlovecode.USSDCreationApp.utils.TransactionType;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,120 +23,166 @@ import java.util.stream.Collectors;
 public class AccountServiceImpl implements AccountService {
 
     private AccountRepository accountRepository;
-
     private ModelMapper modelMapper;
-
-    private AccountNumberGenerator accountNumberGenerator;
+    private PasswordEncoder passwordEncoder;
 
     @Override
-    public AccountDto createAccount(AccountDto accountDto) {
+    public AccountResponseDto createAccount(AccountRequestDto dto) {
 
-        Account account = modelMapper.map(accountDto, Account.class);
+        //check for duplicate
+        if (accountRepository.existsByEmail(dto.getEmail())){
+            throw new RuntimeException("Email already exist");
+        }
+        if (accountRepository.existsByPhoneNumber(dto.getPhoneNumber())){
+            throw new RuntimeException("Phone number already exist");
+        }
 
-        account.setAccountNumber(accountNumberGenerator.generateAccountNumber());
+        // Map DTO to Entity
+        Account account = modelMapper.map(dto, Account.class);
 
-        // General and set account Number
-        Account savedAccount = accountRepository.save(account);
+        // Encrypt Sensitive field
+        account.setPassword(passwordEncoder.encode(dto.getPassword()));
+        account.setPin(passwordEncoder.encode(dto.getPin()));
 
-        AccountDto saveAccountDto = modelMapper.map(savedAccount, AccountDto.class);
+        // Generate Unique account number
+        account.setAccountNumber(generateAccountNumber());
 
-        return saveAccountDto;
+        //Default balance
+        account.setBalance(BigDecimal.ZERO);
 
+        //save account
+        Account saved = accountRepository.save(account);
+
+
+        // map entity to response DTO
+        return modelMapper.map(saved, AccountResponseDto.class);
+    }
+
+
+    private String generateAccountNumber() {
+        String accountNumber;
+        do {
+            accountNumber = String.valueOf((long)(Math.random() * 1_000_000_0000L));
+        } while (accountRepository.existsByAccountNumber(accountNumber));
+        return accountNumber;
+    }
+
+
+    @Override
+    public AccountResponseDto getAccountById(Long id) {
+
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Account", "id", id)
+                );
+
+        return modelMapper.map(account, AccountResponseDto.class);
     }
 
     @Override
-    public AccountDto getAccountById(Long id) {
+    public List<AccountResponseDto> getAllAccounts() {
 
-        Account accountDto = accountRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Account", "id",  id)
-        );
-        return modelMapper.map(accountDto, AccountDto.class);
-    }
+        List<Account> accounts = accountRepository.findAll();
 
-    @Override
-    public List<AccountDto> getAllAccounts() {
-
-        List<Account> account = accountRepository.findAll();
-
-        return account.stream().map(
-                (accounts) -> modelMapper.map(accounts, AccountDto.class))
+        return accounts.stream()
+                .map(account -> modelMapper.map(account, AccountResponseDto.class))
                 .collect(Collectors.toList());
-
     }
 
     @Override
-    public AccountDto updateAccount(Long id, AccountDto accountDto) {
-        Account account = accountRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Account", "id", id)
-        );
+    public AccountResponseDto updateAccount(Long id, AccountUpdateRequestDto dto) {
 
-        if (accountDto.getAddress() != null) account.setAddress(accountDto.getAddress());
-        if (accountDto.getCity() != null) account.setCity(accountDto.getCity());
-        if (accountDto.getAccountNumber() != null) account.setAccountNumber(accountDto.getAccountNumber());
-        if (accountDto.getCountry() != null) account.setCountry(accountDto.getCountry());
-        if (accountDto.getDateOfBirth() != null) account.setDateOfBirth(accountDto.getDateOfBirth());
-        if (accountDto.getGender() != null) account.setGender(accountDto.getGender());
-        if (accountDto.getAccountType() != null) account.setAccountType(accountDto.getAccountType());
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Account", "id", id)
+                );
+
+        if (dto.getAddress() != null) {
+            account.setAddress(dto.getAddress());
+        }
+
+        if (dto.getCity() != null) {
+            account.setCity(dto.getCity());
+        }
+
+        if (dto.getCountry() != null) {
+            account.setCountry(dto.getCountry());
+        }
+
+        if (dto.getDateOfBirth() != null) {
+            account.setDateOfBirth(dto.getDateOfBirth());
+        }
+
+        if (dto.getGender() != null) {
+            account.setGender(dto.getGender());
+        }
+
+        if (dto.getAccountType() != null) {
+            account.setAccountType(dto.getAccountType());
+        }
 
         Account savedAccount = accountRepository.save(account);
-        return modelMapper.map(savedAccount, AccountDto.class);
+
+        return modelMapper.map(savedAccount, AccountResponseDto.class);
     }
+
 
     @Transactional
     @Override
-    public AccountDto depositInToAccount(Long id, Double amount) {
+    public AccountResponseDto depositInToAccount(Long id, BigDecimal amount) {
 
         Account account = accountRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Account", "id", id)
         );
 
-        if (amount == null || amount <= 0){
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0){
             throw new   IllegalArgumentException("Deposit amount must be greater than 0");
         }
 
-        // update balance
-      double currentBalance = (account.getBalance() != null) ? account.getBalance() : 0.0;
-      account.setBalance(currentBalance + amount);
-        // save transaction record
+        // update balance safety using BigDecimal
+      account.setBalance(account.getBalance().add(amount));
 
+        // save transaction record
         Transaction transaction = new Transaction();
         transaction.setAmount(amount);
-        transaction.setType("DEPOSIT");
+        transaction.setType(TransactionType.DEPOSIT.name());
         transaction.setTransactionDate(LocalDateTime.now());
         transaction.setAccount(account);
 
         account.getTransactions().add(transaction);
 
+
+        // No need to explicitly save if @Transactional is used,
+        // but keeping it is also fine
         Account saveAccount =  accountRepository.save(account);
 
-        return modelMapper.map(saveAccount, AccountDto.class);
+        return modelMapper.map(saveAccount, AccountResponseDto.class);
     }
 
     @Transactional
     @Override
-    public AccountDto withdrawFromAccount(Long id, Double amount) {
+    public AccountResponseDto withdrawFromAccount(Long id, BigDecimal amount) {
 
         Account account = accountRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Account", "id", id)
         );
 
-        if (amount == null || amount <= 0){
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0){
             throw new IllegalArgumentException("Withdrawal amount must be greater than 0");
         }
 
-        if (account.getBalance() < amount){
+        if (account.getBalance().compareTo(amount) < 0){
             throw new IllegalArgumentException("Insufficient balance");
 
         }
 
         // Deduct Balance
-        account.setBalance(account.getBalance() - amount);
+        account.setBalance(account.getBalance().subtract(amount));
 
-        //save Transaction record
-
+        //Create Transaction record
         Transaction transaction = new Transaction();
         transaction.setAmount(amount);
-        transaction.setType("WITHDRAWAL");
+        transaction.setType(TransactionType.WITHDRAWAL.name());
         transaction.setTransactionDate(LocalDateTime.now());
         transaction.setAccount(account);
 
@@ -142,23 +190,24 @@ public class AccountServiceImpl implements AccountService {
 
         Account savedAccount = accountRepository.save(account);
 
-        return modelMapper.map(savedAccount, AccountDto.class);
+        return modelMapper.map(savedAccount, AccountResponseDto.class);
 
 
     }
 
     @Override
-    public AccountDto checkBalance(Long id) {
+    public BalanceResponseDto checkBalance(Long id) {
 
-        Account checkBalance = accountRepository.findById(id).orElseThrow(
+        Account account = accountRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Account", "id", id)
         );
 
-        if (checkBalance.getBalance() == null){
-            checkBalance.setBalance(0.0);
-        }
+       BalanceResponseDto response = new BalanceResponseDto();
+       response.setAccountNumber(account.getAccountNumber());
+       response.setAccountName(account.getFirstName());
+       response.setBalance(account.getBalance());
 
-        return modelMapper.map(checkBalance, AccountDto.class);
+        return modelMapper.map(response, BalanceResponseDto.class);
     }
 
     @Override
