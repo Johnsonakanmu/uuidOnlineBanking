@@ -63,10 +63,10 @@ This endpoint allows for the deletion of a bank account using its ID. The system
 
 
 #### Technology use in build the project
-Spring boot
-Springdoc OpenAPI / Swagger UI
-Spring Security
-JSON Web Token (JWT)
-Hibernate / Java Persistence API
-MySQL
-Maven
+### Spring boot
+### Springdoc OpenAPI / Swagger UI
+### Spring Security
+### JSON Web Token (JWT)
+### Hibernate / Java Persistence API
+### MySQL
+### Maven
