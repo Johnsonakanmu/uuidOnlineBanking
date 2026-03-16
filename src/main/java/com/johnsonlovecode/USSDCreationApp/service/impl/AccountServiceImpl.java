@@ -3,9 +3,12 @@ package com.johnsonlovecode.USSDCreationApp.service.impl;
 import com.johnsonlovecode.USSDCreationApp.dto.*;
 import com.johnsonlovecode.USSDCreationApp.entity.Account;
 import com.johnsonlovecode.USSDCreationApp.entity.Transaction;
+import com.johnsonlovecode.USSDCreationApp.entity.User;
 import com.johnsonlovecode.USSDCreationApp.exception.ResourceNotFoundException;
 import com.johnsonlovecode.USSDCreationApp.repository.AccountRepository;
+import com.johnsonlovecode.USSDCreationApp.repository.UserRepository;
 import com.johnsonlovecode.USSDCreationApp.service.AccountService;
+import com.johnsonlovecode.USSDCreationApp.utils.AccountType;
 import com.johnsonlovecode.USSDCreationApp.utils.TransactionType;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -15,8 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -25,48 +28,7 @@ public class AccountServiceImpl implements AccountService {
     private AccountRepository accountRepository;
     private ModelMapper modelMapper;
     private PasswordEncoder passwordEncoder;
-
-    @Override
-    public AccountResponseDto createAccount(AccountRequestDto dto) {
-
-        //check for duplicate
-        if (accountRepository.existsByEmail(dto.getEmail())){
-            throw new RuntimeException("Email already exist");
-        }
-        if (accountRepository.existsByPhoneNumber(dto.getPhoneNumber())){
-            throw new RuntimeException("Phone number already exist");
-        }
-
-        // Map DTO to Entity
-        Account account = modelMapper.map(dto, Account.class);
-
-        // Encrypt Sensitive field
-        account.setPassword(passwordEncoder.encode(dto.getPassword()));
-        account.setPin(passwordEncoder.encode(dto.getPin()));
-
-        // Generate Unique account number
-        account.setAccountNumber(generateAccountNumber());
-
-        //Default balance
-        account.setBalance(BigDecimal.ZERO);
-
-        //save account
-        Account saved = accountRepository.save(account);
-
-
-        // map entity to response DTO
-        return modelMapper.map(saved, AccountResponseDto.class);
-    }
-
-
-    private String generateAccountNumber() {
-        String accountNumber;
-        do {
-            accountNumber = String.valueOf((long)(Math.random() * 1_000_000_0000L));
-        } while (accountRepository.existsByAccountNumber(accountNumber));
-        return accountNumber;
-    }
-
+    private UserRepository userRepository;
 
     @Override
     public AccountResponseDto getAccountById(Long id) {
@@ -76,54 +38,127 @@ public class AccountServiceImpl implements AccountService {
                         new ResourceNotFoundException("Account", "id", id)
                 );
 
-        return modelMapper.map(account, AccountResponseDto.class);
+        User user = account.getUser();
+
+        AccountResponseDto response = new AccountResponseDto();
+
+        response.setId(account.getId());
+        response.setFullName(user.getFirstName() + " " + user.getLastName());
+        response.setEmail(user.getEmail());
+        response.setPhoneNumber(user.getPhoneNumber());
+        response.setAccountNumber(account.getAccountNumber());
+        if (account.getTypes() != null) {
+            try {
+                AccountType type = AccountType.valueOf(account.getTypes().toUpperCase());
+                account.setTypes(type.name());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid account type. Must be SAVINGS, CURRENT, or FIXED.");
+            }
+        }        response.setBalance(account.getBalance());
+
+        return response;
     }
+
+    @Override
+    public UserAccountResponseDto getUserWithMultipleAccountTypes(Long id) {
+
+        User user = userRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("User", "id", id)
+        );
+
+        List<AccountDto> accountList = user.getAccounts()
+                .stream()
+                .map(account -> {
+                    AccountDto dto = new AccountDto();
+                    dto.setId(account.getId());
+                    dto.setAccountNumber(account.getAccountNumber());
+                    dto.setTypes(account.getTypes());
+                    dto.setBalance(account.getBalance());
+                    return dto;
+                        })
+                .toList();
+
+        UserAccountResponseDto response = new UserAccountResponseDto();
+        response.setUserId(user.getId());
+        response.setFullName(user.getFirstName() + " " + user.getLastName());
+        response.setEmail(user.getEmail());
+        response.setPhoneNumber(user.getPhoneNumber());
+        response.setAccounts(accountList);
+
+        return response;
+    }
+
 
     @Override
     public List<AccountResponseDto> getAllAccounts() {
 
         List<Account> accounts = accountRepository.findAll();
 
-        return accounts.stream()
-                .map(account -> modelMapper.map(account, AccountResponseDto.class))
-                .collect(Collectors.toList());
+        List<AccountResponseDto> responses = new ArrayList<>();
+
+        for (Account account : accounts){
+            User user = account.getUser();
+
+            AccountResponseDto response = new AccountResponseDto();
+            response.setId(account.getId());
+            response.setFullName(user.getFirstName() + " " + user.getLastName());
+            response.setEmail(user.getEmail());
+            response.setPhoneNumber(user.getPhoneNumber());
+            response.setAccountNumber(account.getAccountNumber());
+            response.setTypes(account.getTypes());
+            response.setBalance(account.getBalance());
+
+            responses.add(response);
+        }
+        return responses;
+
     }
+
 
     @Override
     public AccountResponseDto updateAccount(Long id, AccountUpdateRequestDto dto) {
 
+        // Fetch the account
         Account account = accountRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Account", "id", id)
-                );
+                .orElseThrow(() -> new ResourceNotFoundException("Account", "id", id));
 
-        if (dto.getAddress() != null) {
-            account.setAddress(dto.getAddress());
-        }
+        // Update only fields provided in the DTO (keep existing values if null)
+        account.setAddress(dto.getAddress() != null ? dto.getAddress() : account.getAddress());
+        account.setCity(dto.getCity() != null ? dto.getCity() : account.getCity());
+        account.setCountry(dto.getCountry() != null ? dto.getCountry() : account.getCountry());
+        account.setDateOfBirth(dto.getDateOfBirth() != null ? dto.getDateOfBirth() : account.getDateOfBirth());
+        account.setGender(dto.getGender() != null ? dto.getGender() : account.getGender());
 
-        if (dto.getCity() != null) {
-            account.setCity(dto.getCity());
-        }
-
-        if (dto.getCountry() != null) {
-            account.setCountry(dto.getCountry());
-        }
-
-        if (dto.getDateOfBirth() != null) {
-            account.setDateOfBirth(dto.getDateOfBirth());
-        }
-
-        if (dto.getGender() != null) {
-            account.setGender(dto.getGender());
-        }
-
+        // Update account type if provided and valid
         if (dto.getAccountType() != null) {
-            account.setAccountType(dto.getAccountType());
+            try {
+                AccountType type = AccountType.valueOf(dto.getAccountType().toUpperCase());
+                account.setTypes(type.name());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid account type. Must be SAVINGS, CURRENT, or FIXED.");
+            }
         }
 
+        // Save updated account
         Account savedAccount = accountRepository.save(account);
 
-        return modelMapper.map(savedAccount, AccountResponseDto.class);
+        // Map to response DTO
+        User user = savedAccount.getUser();
+        AccountResponseDto response = new AccountResponseDto();
+        response.setId(savedAccount.getId());
+        response.setFullName(user.getFirstName() + " " + user.getLastName());
+        response.setEmail(user.getEmail());
+        response.setPhoneNumber(user.getPhoneNumber());
+        response.setAccountNumber(savedAccount.getAccountNumber());
+        response.setBalance(savedAccount.getBalance());
+        response.setAddress(savedAccount.getAddress());
+        response.setCity(savedAccount.getCity());
+        response.setCountry(savedAccount.getCountry());
+        response.setDateOfBirth(savedAccount.getDateOfBirth());
+        response.setGender(savedAccount.getGender());
+        response.setTypes(savedAccount.getTypes()); // ✅ correct account type in response
+        response.setAuthorities(savedAccount.getUser().getRoles());
+        return response;
     }
 
 
@@ -149,14 +184,31 @@ public class AccountServiceImpl implements AccountService {
         transaction.setTransactionDate(LocalDateTime.now());
         transaction.setAccount(account);
 
+        // Add transaction to account
         account.getTransactions().add(transaction);
+        // Save account
+        Account savedAccount =  accountRepository.save(account);
+        // Map Manually to response DTo
+        User user = savedAccount.getUser();
+
+        AccountResponseDto response = new AccountResponseDto();
+        response.setId(savedAccount.getId());
+        response.setFullName(user.getFirstName() + " " + user.getLastName());
+        response.setEmail(user.getEmail());
+        response.setPhoneNumber(user.getPhoneNumber());
+        response.setAccountNumber(savedAccount.getAccountNumber());
+        response.setTypes(savedAccount.getTypes());
+        response.setBalance(savedAccount.getBalance());
 
 
-        // No need to explicitly save if @Transactional is used,
-        // but keeping it is also fine
-        Account saveAccount =  accountRepository.save(account);
+        // Include optional fields if your response DTO has them
+        response.setAddress(savedAccount.getAddress());
+        response.setCity(savedAccount.getCity());
+        response.setCountry(savedAccount.getCountry());
+        response.setDateOfBirth(savedAccount.getDateOfBirth());
+        response.setGender(savedAccount.getGender());
 
-        return modelMapper.map(saveAccount, AccountResponseDto.class);
+        return response;
     }
 
     @Transactional
@@ -190,8 +242,26 @@ public class AccountServiceImpl implements AccountService {
 
         Account savedAccount = accountRepository.save(account);
 
-        return modelMapper.map(savedAccount, AccountResponseDto.class);
+        // 7️⃣ Map manually to response DTO
+        User user = savedAccount.getUser();
 
+        AccountResponseDto response = new AccountResponseDto();
+        response.setId(savedAccount.getId());
+        response.setFullName(user.getFirstName() + " " + user.getLastName());
+        response.setEmail(user.getEmail());
+        response.setPhoneNumber(user.getPhoneNumber());
+        response.setAccountNumber(savedAccount.getAccountNumber());
+        response.setTypes(savedAccount.getTypes());
+        response.setBalance(savedAccount.getBalance());
+
+        // Include optional fields if DTO has them
+        response.setAddress(savedAccount.getAddress());
+        response.setCity(savedAccount.getCity());
+        response.setCountry(savedAccount.getCountry());
+        response.setDateOfBirth(savedAccount.getDateOfBirth());
+        response.setGender(savedAccount.getGender());
+
+        return response;
 
     }
 
@@ -202,12 +272,19 @@ public class AccountServiceImpl implements AccountService {
                 () -> new ResourceNotFoundException("Account", "id", id)
         );
 
+        // Map manually to BalanceResponseDto
+        User user = account.getUser();
+
        BalanceResponseDto response = new BalanceResponseDto();
        response.setAccountNumber(account.getAccountNumber());
-       response.setAccountName(account.getFirstName());
        response.setBalance(account.getBalance());
 
-        return modelMapper.map(response, BalanceResponseDto.class);
+
+        // Optional: include full name
+        response.setAccountName(user.getFirstName() + " " + user.getLastName());
+
+
+        return response;
     }
 
     @Override

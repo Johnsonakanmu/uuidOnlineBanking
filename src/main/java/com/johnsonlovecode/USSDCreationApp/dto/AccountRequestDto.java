@@ -1,5 +1,6 @@
 package com.johnsonlovecode.USSDCreationApp.dto;
 
+import com.johnsonlovecode.USSDCreationApp.utils.AccountType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -16,6 +17,9 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AccountRequestDto {
+
+    private Long id;
+
     @NotBlank(message = "First name is required")
     private String firstName;
 
@@ -39,7 +43,7 @@ public class AccountRequestDto {
 
     private String address;
     private String city;
-    private String accountType;
+    private String types; //eg "SAVINGS", "CURRENT", FIXED
     private String country;
     private Date dateOfBirth;
     private String gender;

@@ -2,6 +2,7 @@ package com.johnsonlovecode.USSDCreationApp.entity;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.johnsonlovecode.USSDCreationApp.utils.AccountType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,21 +29,6 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String firstName;
-
-    @Column(nullable = false)
-    private String lastName;
-
-    @Column(nullable = false, unique = true)
-    private String email;
-
-    @Column(nullable = false, unique = true)
-    private String phoneNumber;
-
-    @Column(nullable = false, length = 100)
-    private String password; // encrypted
-
     @Column(nullable = false, length = 100)
     private String pin; // encrypted
 
@@ -51,7 +37,9 @@ public class Account {
 
     private String address;
     private String city;
-    private String accountType;
+
+    private String types; //eg "SAVINGS", "CURRENT", FIXED
+
     private String country;
     private Date dateOfBirth;
     private String gender;
@@ -64,6 +52,11 @@ public class Account {
 
     @UpdateTimestamp
     private LocalDateTime lastUpdated;
+
+    // Relationship
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     // If you want transactions
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)

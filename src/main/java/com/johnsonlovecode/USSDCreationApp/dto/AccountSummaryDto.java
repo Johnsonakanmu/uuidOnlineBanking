@@ -11,10 +11,9 @@ import java.math.BigDecimal;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class AccountDto {
+public class AccountSummaryDto {
 
-    private Long id;
     private String accountNumber;
-    private String types;
+    private String accountType;
     private BigDecimal balance;
 }

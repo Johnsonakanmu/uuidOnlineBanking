@@ -1,20 +1,18 @@
 package com.johnsonlovecode.USSDCreationApp.dto;
 
+
+import com.johnsonlovecode.USSDCreationApp.utils.AccountType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class AccountDto {
+public class OpenAccountRequestDto {
 
-    private Long id;
-    private String accountNumber;
-    private String types;
-    private BigDecimal balance;
+    private AccountType type;
+    private String pin;
 }

@@ -1,17 +1,21 @@
 package com.johnsonlovecode.USSDCreationApp.service;
 
 import com.johnsonlovecode.USSDCreationApp.dto.*;
+import com.johnsonlovecode.USSDCreationApp.utils.AccountType;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public interface AccountService {
 
-    public AccountResponseDto createAccount(AccountRequestDto dto);
+
 
     public AccountResponseDto getAccountById(Long id);
 
+    public UserAccountResponseDto getUserWithMultipleAccountTypes(Long id);
+
     public List<AccountResponseDto> getAllAccounts();
+
 
     public AccountResponseDto updateAccount(Long id, AccountUpdateRequestDto updateRequestDto);
 

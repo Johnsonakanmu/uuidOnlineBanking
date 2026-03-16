@@ -5,8 +5,8 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum TransactionType {
-    DEPOSIT,
-    WITHDRAWAL,
-    TRANSFER
+public enum AccountType {
+    SAVINGS,
+    CURRENT,
+    FIXED
 }
