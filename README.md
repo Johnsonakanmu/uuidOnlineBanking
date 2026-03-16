@@ -60,3 +60,13 @@ This endpoint allows a user to check the current balance of a specific bank acco
 
 ### Delete Account
 This endpoint allows for the deletion of a bank account using its ID. The system first checks if the account exists in the database.
+
+
+#### Technology use in build the project
+Spring boot
+Springdoc OpenAPI / Swagger UI
+Spring Security
+JSON Web Token (JWT)
+Hibernate / Java Persistence API
+MySQL
+Maven
