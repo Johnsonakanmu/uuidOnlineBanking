@@ -31,8 +31,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        System.out.println("JwtAuthenticationFilter triggered for URL: " + request.getRequestURI());
-
         final String authHeader = request.getHeader("Authorization");
         final String jwtToken;
         final String username;
@@ -52,9 +50,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 UserDetails userDetails =
                         customUserDetailService.loadUserByUsername(username);
-
-                System.out.println("User: " + userDetails.getUsername());
-                System.out.println("Authorities: " + userDetails.getAuthorities());
 
                 if (jwtService.isTokenValid(jwtToken, userDetails)) {
 
