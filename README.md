@@ -14,12 +14,16 @@ Additionally, the system allows retrieval of users with their associated multipl
 - Spring Security
 - JWT Authentication
 - MySQL
+- Springdoc OpenAPI / Swagger UI
+- Maven
 - JPA / Hibernate
 
 ## Features
-- User Registration and Create Bank Account
-- User Login
-- Open Another Account
+- Create Account and Register Normal User
+- User Authentication & Account Summary Service (JWT-Based Login)
+- Create Account and Register Admin User
+- Open Additional Account for Existing User
+- Open Additional Account for Admin User
 - Get User Accounts
 - Get Account By Id
 - Get All Accounts
@@ -28,16 +32,29 @@ Additionally, the system allows retrieval of users with their associated multipl
 - Withdraw Money
 - Check Balance
 - Delete Account
-- Transaction History
+- Get Account Transaction History
+- Retrieve Last 10 Transactions for an Account
+- Get Transactions by Date Range
+- Filter Transactions by Type
 
-### User Registration and Create Bank Account
-This endpoint registers a new user and automatically generates a bank account for that user.
+### Create Account and Register Normal User
+This endpoint handles both user registration and bank account creation for a normal user in a single operation.
+Upon successful validation, a new user is created with encrypted credentials and assigned the default role of ROLE_USER.The account type is validated against predefined values (SAVINGS, CURRENT, FIXED) to ensure data integrity.
+### Create Account and Register Admin User
+This endpoint handles the creation of a new admin user along with their associated bank account in a single operation.
+It first validates the uniqueness of the user's email and phone number to prevent duplicate registrations. Upon successful validation, a new user is created with securely encoded credentials and assigned both USER and ADMIN roles.
 
-### Open Another Account
-This endpoint allows an existing user to open an additional bank account with a different account type (e.g., Savings, Current, or Fixed). The system first verifies that the user exists and checks whether the user already has the specified account type.
+### User Authentication & Account Summary Service (JWT-Based Login)
+This service handles user authentication and returns a secure login response using JWT (JSON Web Token). It validates user credentials, generates an authentication token, and provides a summarized view of the user’s associated bank accounts.
+
+### Open Additional Account for Existing User
+This feature allows an existing user to create an additional bank account of a specified type within the system.
+The service validates the provided PIN, ensures the user exists, and checks that the user does not already own an account of the requested type
+
+### Open Additional Account for Admin User
+This endpoint allows an administrator to create an additional bank account for an existing user in the system.
 
 ### GetUser Accounts
-
 This endpoint retrieves a user along with all the bank accounts associated with that user. The system first verifies that the user exists using the provided user ID.
 
 ###  GetAccount By Id
@@ -61,12 +78,14 @@ This endpoint allows a user to check the current balance of a specific bank acco
 ### Delete Account
 This endpoint allows for the deletion of a bank account using its ID. The system first checks if the account exists in the database.
 
+### Get Account Transaction History
+Retrieves the complete transaction history associated with a specific account. This endpoint fetches all transactions linked to the provided account ID and returns a list of transaction details, including the transaction ID, amount, type (e.g., debit or credit), transaction date, and the associated account number.
 
-#### Technology use in build the project
-### Spring boot
-### Springdoc OpenAPI / Swagger UI
-### Spring Security
-### JSON Web Token (JWT)
-### Hibernate / Java Persistence API
-### MySQL
-### Maven
+### Retrieve Last 10 Transactions for an Account
+This method fetches the 10 most recent transactions associated with a given account ID. It queries the database to retrieve transactions in descending order of transaction date, ensuring the latest activities appear first. Each transaction is mapped to a TransactionResponseDto, which includes the transaction ID, amount, type, date, and the related account number.
+
+### Get Transactions by Date Range
+Retrieves a list of transactions for a specific account within a given date range. Each transaction is returned as a TransactionResponseDto containing the transaction ID, amount, type, transaction date, and the associated account number. This method is useful for generating account statements or filtering transaction history by specific time periods.
+
+### Filter Transactions by Type
+This method retrieves all transactions of a specific type (e.g., "DEPOSIT", "WITHDRAWAL") for a given account. It queries the database using the account ID and transaction type, then maps each transaction to a TransactionResponseDto containing key details such as transaction ID, amount, type, date, and the associated account number.
