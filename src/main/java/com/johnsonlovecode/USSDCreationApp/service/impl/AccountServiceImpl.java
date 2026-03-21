@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -164,22 +165,30 @@ public class AccountServiceImpl implements AccountService {
 
     @Transactional
     @Override
-    public AccountResponseDto depositInToAccount(Long id, BigDecimal amount) {
+    public AccountResponseDto depositInToAccount(DepositRequestDto request) {
 
-        Account account = accountRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Account", "id", id)
+        Account account = accountRepository.findById(request.getAccountId()).orElseThrow(
+                () -> new ResourceNotFoundException("Account", "id", request.getAccountId())
         );
 
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0){
+
+        // ✅ Validate PIN first
+        if (!passwordEncoder.matches(request.getPin(), account.getPin())) {
+            throw new IllegalArgumentException("Invalid PIN");
+        }
+
+
+
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0){
             throw new   IllegalArgumentException("Deposit amount must be greater than 0");
         }
 
         // update balance safety using BigDecimal
-      account.setBalance(account.getBalance().add(amount));
+      account.setBalance(account.getBalance().add(request.getAmount()));
 
         // save transaction record
         Transaction transaction = new Transaction();
-        transaction.setAmount(amount);
+        transaction.setAmount(request.getAmount());
         transaction.setType(TransactionType.DEPOSIT.name());
         transaction.setTransactionDate(LocalDateTime.now());
         transaction.setAccount(account);
@@ -213,27 +222,34 @@ public class AccountServiceImpl implements AccountService {
 
     @Transactional
     @Override
-    public AccountResponseDto withdrawFromAccount(Long id, BigDecimal amount) {
+    public AccountResponseDto withdrawFromAccount(WithdrawRequestDto request) {
 
-        Account account = accountRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Account", "id", id)
+        Account account = accountRepository.findById(request.getAccountId()).orElseThrow(
+                () -> new ResourceNotFoundException("Account", "id", request.getAccountId())
         );
 
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0){
+        // ✅ Validate PIN using BCrypt
+        if (!passwordEncoder.matches(request.getPin(), account.getPin().trim())) {
+            throw new IllegalArgumentException("Invalid PIN");
+        }
+
+
+
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0){
             throw new IllegalArgumentException("Withdrawal amount must be greater than 0");
         }
 
-        if (account.getBalance().compareTo(amount) < 0){
+        if (account.getBalance().compareTo(request.getAmount()) < 0){
             throw new IllegalArgumentException("Insufficient balance");
 
         }
 
         // Deduct Balance
-        account.setBalance(account.getBalance().subtract(amount));
+        account.setBalance(account.getBalance().subtract(request.getAmount()));
 
         //Create Transaction record
         Transaction transaction = new Transaction();
-        transaction.setAmount(amount);
+        transaction.setAmount(request.getAmount());
         transaction.setType(TransactionType.WITHDRAWAL.name());
         transaction.setTransactionDate(LocalDateTime.now());
         transaction.setAccount(account);
@@ -266,11 +282,16 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public BalanceResponseDto checkBalance(Long id) {
+    public BalanceResponseDto checkBalance(BalanceRequestDto request) {
 
-        Account account = accountRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Account", "id", id)
+        Account account = accountRepository.findById(request.getAccountId()).orElseThrow(
+                () -> new ResourceNotFoundException("Account", "id", request.getAccountId())
         );
+
+        // ✅ Validate PIN
+        if (!passwordEncoder.matches(request.getPin(), account.getPin().trim())) {
+            throw new IllegalArgumentException("Invalid PIN");
+        }
 
         // Map manually to BalanceResponseDto
         User user = account.getUser();
@@ -285,6 +306,30 @@ public class AccountServiceImpl implements AccountService {
 
 
         return response;
+    }
+
+    @Override
+    public List<AccountResponseDto> searchAccountByName(String name) {
+
+        List<Account> accounts = accountRepository.findAccountsByUserName(name);
+
+        return accounts.stream().map(account ->{
+            AccountResponseDto dto = new AccountResponseDto();
+            dto.setId(account.getId());
+            dto.setFullName(account.getUser().getFirstName() + " " + account.getUser().getLastName());
+            dto.setEmail(account.getUser().getEmail());
+            dto.setAccountNumber(account.getAccountNumber());
+            dto.setPhoneNumber(account.getUser().getPhoneNumber());
+            dto.setTypes(account.getTypes());
+            dto.setBalance(account.getBalance());
+            dto.setAddress(account.getAddress());
+            dto.setCity(account.getCity());
+            dto.setCountry(account.getCountry());
+            dto.setDateOfBirth(account.getDateOfBirth());
+            dto.setGender(account.getGender());
+            dto.setAuthorities(account.getUser().getRoles());
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     @Override

@@ -1,9 +1,6 @@
 package com.johnsonlovecode.USSDCreationApp.controller;
 
-import com.johnsonlovecode.USSDCreationApp.dto.AccountResponseDto;
-import com.johnsonlovecode.USSDCreationApp.dto.BalanceResponseDto;
-import com.johnsonlovecode.USSDCreationApp.dto.DepositRequestDto;
-import com.johnsonlovecode.USSDCreationApp.dto.TransactionResponseDto;
+import com.johnsonlovecode.USSDCreationApp.dto.*;
 import com.johnsonlovecode.USSDCreationApp.service.AccountService;
 import com.johnsonlovecode.USSDCreationApp.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,11 +43,10 @@ public class TransactionController {
             description = "HTTP Status 201 CREATED"
     )
     //
-    @PostMapping("/{id}/deposit")
-    public ResponseEntity<AccountResponseDto> depositInToAccount(@PathVariable("id") Long accountId,
-                                                                 @RequestBody DepositRequestDto request){
+    @PostMapping("/deposit")
+    public ResponseEntity<AccountResponseDto> depositInToAccount(@RequestBody DepositRequestDto request){
 
-        AccountResponseDto accountDto = accountService.depositInToAccount(accountId, request.getAmount());
+        AccountResponseDto accountDto = accountService.depositInToAccount(request);
         return  new ResponseEntity<>(accountDto, HttpStatus.CREATED);
 
     }
@@ -64,10 +60,10 @@ public class TransactionController {
             description = "HTTP Status 201 CREATED"
     )
     //
-    @PostMapping("/{id}/withdrawal")
-    public ResponseEntity<AccountResponseDto>  withdrawFromAccount(@PathVariable("id") Long accountId, @RequestBody DepositRequestDto request){
+    @PostMapping("/withdrawal")
+    public ResponseEntity<AccountResponseDto>  withdrawFromAccount(@RequestBody WithdrawRequestDto request){
 
-        AccountResponseDto response = accountService.withdrawFromAccount(accountId, request.getAmount());
+        AccountResponseDto response = accountService.withdrawFromAccount(request);
 
         return new ResponseEntity<>(response, HttpStatus.OK);
 
@@ -83,10 +79,10 @@ public class TransactionController {
             description = "HTTP Status 200 SUCCESS"
     )
     //
-    @GetMapping("/{id}/balance")
-    public ResponseEntity<BalanceResponseDto> checkBalance(@PathVariable("id") Long transactionId){
+    @PostMapping("/balance")
+    public ResponseEntity<BalanceResponseDto> checkBalance(@RequestBody BalanceRequestDto requestDto){
 
-        BalanceResponseDto account = accountService.checkBalance(transactionId);
+        BalanceResponseDto account = accountService.checkBalance(requestDto);
 
         return  new ResponseEntity<>(account, HttpStatus.OK);
     }

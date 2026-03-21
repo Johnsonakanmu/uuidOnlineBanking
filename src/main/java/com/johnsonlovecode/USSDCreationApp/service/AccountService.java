@@ -2,6 +2,7 @@ package com.johnsonlovecode.USSDCreationApp.service;
 
 import com.johnsonlovecode.USSDCreationApp.dto.*;
 import com.johnsonlovecode.USSDCreationApp.utils.AccountType;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,14 +17,20 @@ public interface AccountService {
 
     public List<AccountResponseDto> getAllAccounts();
 
-
     public AccountResponseDto updateAccount(Long id, AccountUpdateRequestDto updateRequestDto);
 
-    public AccountResponseDto depositInToAccount(Long id, BigDecimal amount);
+    public AccountResponseDto depositInToAccount(DepositRequestDto request);
 
-    public AccountResponseDto withdrawFromAccount(Long id, BigDecimal amount);
+//    @Transactional
+//    AccountResponseDto depositInToAccount(DepositRequestDto request);
 
-    public BalanceResponseDto checkBalance(Long id);
+    public AccountResponseDto withdrawFromAccount(WithdrawRequestDto request);
+
+    public BalanceResponseDto checkBalance(BalanceRequestDto request);
+
+    public List<AccountResponseDto> searchAccountByName(String name);
 
     void deleteAccount(Long id);
+
+
 }

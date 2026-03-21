@@ -107,4 +107,24 @@ public class AccountController {
 
     }
 
+    // for Swagger implementation For UPDATE
+    @Operation(
+            summary = "Search for user name  Rest API",
+            description = "This API allows users to search for their account details using their first or last name, especially if they have forgotten their account number."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "HTTP Status 200 SUCCESS"
+    )
+    //
+
+    @GetMapping("/search")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<AccountResponseDto>> searchAccount(@RequestParam("name") String name){
+       List< AccountResponseDto> search =  accountService.searchAccountByName(name);
+
+       return ResponseEntity.ok(search);
+    }
+
+
 }
