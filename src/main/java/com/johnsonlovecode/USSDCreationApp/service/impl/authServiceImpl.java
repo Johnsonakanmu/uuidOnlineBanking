@@ -188,8 +188,6 @@ public class authServiceImpl implements AuthService {
             throw new RuntimeException("Email or password not correct");
         }
 
-
-
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", request.getEmail()));
 

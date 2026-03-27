@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 public class AccountServiceImpl implements AccountService {
 
     private AccountRepository accountRepository;
-    private ModelMapper modelMapper;
     private PasswordEncoder passwordEncoder;
     private UserRepository userRepository;
 
@@ -171,18 +170,14 @@ public class AccountServiceImpl implements AccountService {
                 () -> new ResourceNotFoundException("Account", "id", request.getAccountId())
         );
 
-
         // ✅ Validate PIN first
         if (!passwordEncoder.matches(request.getPin(), account.getPin())) {
             throw new IllegalArgumentException("Invalid PIN");
         }
 
-
-
         if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0){
             throw new   IllegalArgumentException("Deposit amount must be greater than 0");
         }
-
         // update balance safety using BigDecimal
       account.setBalance(account.getBalance().add(request.getAmount()));
 
@@ -233,15 +228,12 @@ public class AccountServiceImpl implements AccountService {
             throw new IllegalArgumentException("Invalid PIN");
         }
 
-
-
         if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0){
             throw new IllegalArgumentException("Withdrawal amount must be greater than 0");
         }
 
         if (account.getBalance().compareTo(request.getAmount()) < 0){
             throw new IllegalArgumentException("Insufficient balance");
-
         }
 
         // Deduct Balance
@@ -299,12 +291,8 @@ public class AccountServiceImpl implements AccountService {
        BalanceResponseDto response = new BalanceResponseDto();
        response.setAccountNumber(account.getAccountNumber());
        response.setBalance(account.getBalance());
-
-
         // Optional: include full name
         response.setAccountName(user.getFirstName() + " " + user.getLastName());
-
-
         return response;
     }
 
